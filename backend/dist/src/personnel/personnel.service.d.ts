@@ -1,0 +1,97 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { CreatePersonnelDto } from './dto/create-personnel.dto';
+import { UpdatePersonnelDto } from './dto/update-personnel.dto';
+export declare class PersonnelService {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    create(createPersonnelDto: CreatePersonnelDto): import("@prisma/client").Prisma.Prisma__PersonnelClient<{
+        id: number;
+        createdAt: Date;
+        name: string;
+        status: string;
+        updatedAt: Date;
+        role: string;
+        phone: string | null;
+        salaryPerDay: number;
+        idCardNumber: string | null;
+        idCardUrl: string | null;
+        contractUrl: string | null;
+        contractType: string | null;
+        hasTaxCommitment: boolean;
+    }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
+    findAll(): import("@prisma/client").Prisma.PrismaPromise<{
+        id: number;
+        createdAt: Date;
+        name: string;
+        status: string;
+        updatedAt: Date;
+        role: string;
+        phone: string | null;
+        salaryPerDay: number;
+        idCardNumber: string | null;
+        idCardUrl: string | null;
+        contractUrl: string | null;
+        contractType: string | null;
+        hasTaxCommitment: boolean;
+    }[]>;
+    findOne(id: number): import("@prisma/client").Prisma.Prisma__PersonnelClient<{
+        id: number;
+        createdAt: Date;
+        name: string;
+        status: string;
+        updatedAt: Date;
+        role: string;
+        phone: string | null;
+        salaryPerDay: number;
+        idCardNumber: string | null;
+        idCardUrl: string | null;
+        contractUrl: string | null;
+        contractType: string | null;
+        hasTaxCommitment: boolean;
+    } | null, null, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
+    findByPhone(phone: string): import("@prisma/client").Prisma.Prisma__PersonnelClient<{
+        id: number;
+        createdAt: Date;
+        name: string;
+        status: string;
+        updatedAt: Date;
+        role: string;
+        phone: string | null;
+        salaryPerDay: number;
+        idCardNumber: string | null;
+        idCardUrl: string | null;
+        contractUrl: string | null;
+        contractType: string | null;
+        hasTaxCommitment: boolean;
+    } | null, null, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
+    update(id: number, updatePersonnelDto: UpdatePersonnelDto): import("@prisma/client").Prisma.Prisma__PersonnelClient<{
+        id: number;
+        createdAt: Date;
+        name: string;
+        status: string;
+        updatedAt: Date;
+        role: string;
+        phone: string | null;
+        salaryPerDay: number;
+        idCardNumber: string | null;
+        idCardUrl: string | null;
+        contractUrl: string | null;
+        contractType: string | null;
+        hasTaxCommitment: boolean;
+    }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
+    remove(id: number): import("@prisma/client").Prisma.Prisma__PersonnelClient<{
+        id: number;
+        createdAt: Date;
+        name: string;
+        status: string;
+        updatedAt: Date;
+        role: string;
+        phone: string | null;
+        salaryPerDay: number;
+        idCardNumber: string | null;
+        idCardUrl: string | null;
+        contractUrl: string | null;
+        contractType: string | null;
+        hasTaxCommitment: boolean;
+    }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
+}

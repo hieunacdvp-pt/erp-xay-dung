@@ -1,0 +1,688 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+}
+
+model Project {
+  id          Int       @id @default(autoincrement())
+  name        String
+  location    String    @default("")
+  startDate   DateTime
+  endDate     DateTime?
+  status      String    @default("ACTIVE") // ACTIVE, COMPLETED, SUSPENDED
+  description String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  attendances          Attendance[]
+  inventories          Inventory[]
+  transactions         Transaction[]
+  movements            InventoryMovement[]
+  assetAllocations     AssetAllocation[]
+  salesInvoices        SalesInvoice[]
+  payslips             Payslip[]
+  contract             Contract?
+  materialRequisitions MaterialRequisition[]
+  progressReports      ProgressReport[]
+  budgets              ProjectBudget[]
+  subcontracts         Subcontract[]
+  purchaseRequests     PurchaseRequest[]
+  purchaseOrders       PurchaseOrder[]
+  equipmentDispatches  EquipmentDispatch[]
+  equipmentUsages      EquipmentUsage[]
+  journalEntries       JournalEntry[]
+}
+
+model ProjectBudget {
+  id           Int      @id @default(autoincrement())
+  projectId    Int
+  category     String // NVL (Vật liệu), NHAN_CONG (Nhân công), MAY_THI_CONG (Máy), CHUNG (Sản xuất chung)
+  materialId   Int? // Nếu category là NVL, liên kết tới danh mục vật tư
+  internalCode String? // Mã vật tư nội bộ
+  description  String // Diễn giải (VD: Thép xây dựng, Nhân công cốp pha...)
+  unit         String? // Đơn vị tính
+  quantity     Float    @default(0)
+  unitPrice    Float    @default(0)
+  totalValue   Float    @default(0) // quantity * unitPrice
+  note         String? // Ghi chú kỹ thuật
+  createdAt    DateTime @default(now())
+
+  project  Project   @relation(fields: [projectId], references: [id], onDelete: Cascade)
+  material Material? @relation(fields: [materialId], references: [id])
+}
+
+model Material {
+  id          Int      @id @default(autoincrement())
+  name        String
+  unit        String // kg, m3, bao, etc.
+  price       Float    @default(0) // Đơn giá
+  description String?
+  createdAt   DateTime @default(now())
+
+  inventories          Inventory[]
+  movements            InventoryMovement[]
+  requisitionItems     MaterialRequisitionItem[]
+  budgets              ProjectBudget[]
+  purchaseRequestItems PurchaseRequestItem[]
+  purchaseOrderItems   PurchaseOrderItem[]
+}
+
+model Inventory {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  materialId Int
+  quantity   Float    @default(0)
+  updatedAt  DateTime @updatedAt
+
+  project  Project  @relation(fields: [projectId], references: [id])
+  material Material @relation(fields: [materialId], references: [id])
+
+  @@unique([projectId, materialId])
+}
+
+model Transaction {
+  id                 Int      @id @default(autoincrement())
+  projectId          Int?
+  type               String // INCOME, EXPENSE
+  amount             Float
+  bankFee            Float    @default(0) // Phí chuyển khoản ngân hàng
+  category           String // MATERIAL, LABOR, OTHER
+  date               DateTime @default(now())
+  description        String?
+  vatRate            Float    @default(0) // VAT % (e.g. 10)
+  vatAmount          Float    @default(0) // VAT Amount
+  createdAt          DateTime @default(now())
+  accountId          Int      @default(1)
+  personnelId        Int?
+  internalTransferId Int?
+  subcontractorId    Int?
+  isDirectMaterial   Boolean  @default(false) // Xuất thẳng công trình Nợ 154 thay vì Nợ 152
+  invoiceNumber      String?  // Số hóa đơn GTGT
+
+  project          Project?          @relation(fields: [projectId], references: [id])
+  account          BankAccount       @relation(fields: [accountId], references: [id])
+  personnel        Personnel?        @relation(fields: [personnelId], references: [id])
+  internalTransfer InternalTransfer? @relation(fields: [internalTransferId], references: [id])
+  subcontractor    Subcontractor?    @relation(fields: [subcontractorId], references: [id])
+
+  journalEntries JournalEntry[]
+}
+
+model Personnel {
+  id               Int      @id @default(autoincrement())
+  name             String
+  role             String
+  phone            String?  @unique
+  salaryPerDay     Float
+  status           String   @default("ACTIVE")
+  idCardNumber     String? // Số CCCD
+  idCardUrl        String? // Ảnh chụp CCCD
+  contractUrl      String? // Hợp đồng lao động
+  contractType     String?  @default("THOI_VU") // THOI_VU, CHINH_THUC, KHOAN
+  hasTaxCommitment Boolean  @default(false) // Cam kết 08 (Không khấu trừ 10% thuế TNCN)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  attendances          Attendance[]
+  payslips             Payslip[]
+  materialRequisitions MaterialRequisition[]
+  progressReports      ProgressReport[]
+  transactions         Transaction[]
+}
+
+model Attendance {
+  id          Int      @id @default(autoincrement())
+  personnelId Int
+  projectId   Int
+  date        DateTime @default(now())
+  status      String   @default("PRESENT") // PRESENT, ABSENT, HALF_DAY
+
+  // Biometric & GPS tracking
+  timeIn    DateTime?
+  timeOut   DateTime?
+  latitude  Float?
+  longitude Float?
+  address   String?
+  photoUrl  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  personnel Personnel @relation(fields: [personnelId], references: [id])
+  project   Project   @relation(fields: [projectId], references: [id])
+
+  @@unique([personnelId, projectId, date])
+}
+
+model User {
+  id               Int      @id @default(autoincrement())
+  username         String   @unique
+  password         String
+  role             String   @default("KHO") // ADMIN, KHO, KETOAN, THUQUY, NHANSU
+  currentChallenge String? // WebAuthn challenge
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  credentials      WebAuthnCredential[]
+  sentMessages     InternalMessage[]    @relation("SentMessages")
+  receivedMessages InternalMessage[]    @relation("ReceivedMessages")
+}
+
+model WebAuthnCredential {
+  id         String  @id
+  userId     Int
+  publicKey  Bytes
+  counter    BigInt
+  transports String?
+
+  user User @relation(fields: [userId], references: [id])
+}
+
+model SystemSetting {
+  id    Int    @id @default(autoincrement())
+  key   String @unique
+  value String
+}
+
+model Vendor {
+  id             Int                 @id @default(autoincrement())
+  name           String
+  taxId          String?
+  phone          String?
+  address        String?
+  createdAt      DateTime            @default(now())
+  debts          Debt[]
+  assets         Asset[]
+  purchaseOrders PurchaseOrder[]
+  movements      InventoryMovement[]
+}
+
+model Customer {
+  id            Int            @id @default(autoincrement())
+  name          String
+  phone         String?
+  address       String?
+  taxCode       String?
+  createdAt     DateTime       @default(now())
+  debts         Debt[]
+  salesInvoices SalesInvoice[]
+  contracts     Contract[]
+}
+
+model BankAccount {
+  id             Int      @id @default(autoincrement())
+  name           String // Tên Quỹ / Ngân hàng (VD: Quỹ Tiền Mặt, VCB)
+  type           String   @default("CASH") // CASH, BANK
+  accountNumber  String?
+  bankName       String?
+  openingBalance Float    @default(0) // Số dư đầu kỳ
+  createdAt      DateTime @default(now())
+
+  transactions Transaction[]
+  transfersOut InternalTransfer[] @relation("TransferOut")
+  transfersIn  InternalTransfer[] @relation("TransferIn")
+}
+
+model InternalTransfer {
+  id            Int      @id @default(autoincrement())
+  fromAccountId Int
+  toAccountId   Int
+  amount        Float
+  fee           Float    @default(0)
+  date          DateTime @default(now())
+  description   String
+  createdAt     DateTime @default(now())
+
+  fromAccount BankAccount @relation("TransferOut", fields: [fromAccountId], references: [id])
+  toAccount   BankAccount @relation("TransferIn", fields: [toAccountId], references: [id])
+
+  transactions Transaction[]
+}
+
+model Debt {
+  id         Int      @id @default(autoincrement())
+  vendorId   Int?
+  customerId Int?
+  amount     Float
+  type       String // PAYABLE (Phải trả), RECEIVABLE (Phải thu)
+  status     String   @default("UNPAID") // UNPAID, PARTIAL, PAID
+  createdAt  DateTime @default(now())
+
+  vendor   Vendor?   @relation(fields: [vendorId], references: [id])
+  customer Customer? @relation(fields: [customerId], references: [id])
+}
+
+model InventoryMovement {
+  id            Int      @id @default(autoincrement())
+  type          String // IMPORT (Nhập), EXPORT (Xuất)
+  projectId     Int
+  materialId    Int
+  quantity      Float
+  price         Float    @default(0)
+  vatRate       Float    @default(0) // VAT % (e.g. 10)
+  vatAmount     Float    @default(0) // VAT Amount
+  date          DateTime @default(now())
+  note          String?
+  hasInvoice    Boolean  @default(true) // Hàng về chưa có hóa đơn thì set false
+  invoiceNumber String? // Số hóa đơn nếu có
+  vendorId      Int?
+
+  project  Project  @relation(fields: [projectId], references: [id])
+  vendor   Vendor?  @relation(fields: [vendorId], references: [id])
+  material Material @relation(fields: [materialId], references: [id])
+
+  journalEntries JournalEntry[]
+}
+
+model Asset {
+  id                 Int      @id @default(autoincrement())
+  name               String
+  type               String   @default("OWNED") // OWNED (Tự có), RENTED (Thuê mướn)
+  vendorId           Int? // Nếu đi thuê, thuê của ai
+  purchasePrice      Float // Giá mua hoặc Giá trị hợp đồng thuê
+  purchaseDate       DateTime @default(now())
+  depreciationMonths Int      @default(60) // Số tháng khấu hao (hoặc số tháng thuê)
+  createdAt          DateTime @default(now())
+
+  vendor      Vendor?           @relation(fields: [vendorId], references: [id])
+  allocations AssetAllocation[]
+}
+
+model AssetAllocation {
+  id        Int      @id @default(autoincrement())
+  assetId   Int
+  projectId Int
+  month     String   @default("") // e.g. "2026-05"
+  date      DateTime @default(now())
+  amount    Float
+  createdAt DateTime @default(now())
+
+  asset   Asset   @relation(fields: [assetId], references: [id])
+  project Project @relation(fields: [projectId], references: [id])
+
+  journalEntries JournalEntry[]
+}
+
+model SalesInvoice {
+  id                     Int      @id @default(autoincrement())
+  projectId              Int
+  customerId             Int
+  date                   DateTime @default(now())
+  description            String
+  amount                 Float // Trước thuế
+  vatRate                Float    @default(0)
+  vatAmount              Float
+  totalAmount            Float // Sau thuế
+  costTransferPercentage Float    @default(100) // Tỷ lệ % hoàn thành để kết chuyển Giá vốn (632)
+  retentionPercentage    Float    @default(0) // Tỷ lệ tiền giữ lại bảo hành
+  retentionAmount        Float    @default(0) // Số tiền giữ lại bảo hành
+  status                 String   @default("UNPAID") // UNPAID, PAID
+
+  project  Project  @relation(fields: [projectId], references: [id])
+  customer Customer @relation(fields: [customerId], references: [id])
+
+  journalEntries JournalEntry[]
+}
+
+model Account {
+  code String @id // e.g., '111', '152', '331'
+  name String // e.g., 'Tiền mặt', 'Nguyên liệu, vật liệu'
+  type String // ASSET, LIABILITY, EQUITY, REVENUE, EXPENSE
+
+  lines JournalEntryLine[]
+}
+
+model JournalEntry {
+  id          Int      @id @default(autoincrement())
+  date        DateTime @default(now())
+  description String
+  createdAt   DateTime @default(now())
+
+  // For reversal tracking
+  isReverted      Boolean @default(false)
+  revertedById    Int?
+  originalEntryId Int?
+
+  projectId Int?
+  project   Project? @relation(fields: [projectId], references: [id])
+
+  transactionId Int?
+  transaction   Transaction? @relation(fields: [transactionId], references: [id])
+
+  movementId Int?
+  movement   InventoryMovement? @relation(fields: [movementId], references: [id])
+
+  salesInvoiceId Int?
+  salesInvoice   SalesInvoice? @relation(fields: [salesInvoiceId], references: [id])
+
+  assetAllocationId Int?
+  assetAllocation   AssetAllocation? @relation(fields: [assetAllocationId], references: [id])
+
+  equipmentUsageId Int?
+  equipmentUsage   EquipmentUsage? @relation(fields: [equipmentUsageId], references: [id])
+
+  lines JournalEntryLine[]
+}
+
+model JournalEntryLine {
+  id             Int          @id @default(autoincrement())
+  journalEntryId Int
+  journalEntry   JournalEntry @relation(fields: [journalEntryId], references: [id])
+
+  accountCode String
+  account     Account @relation(fields: [accountCode], references: [code])
+
+  debit  Float @default(0) // Nợ
+  credit Float @default(0) // Có
+}
+
+model Payslip {
+  id          Int    @id @default(autoincrement())
+  personnelId Int
+  projectId   Int
+  month       String // e.g., '2026-05'
+
+  standardDays Float // Số công thực tế (tính từ Attendance)
+  baseSalary   Float // = standardDays * personnel.salaryPerDay
+  allowance    Float @default(0) // Phụ cấp
+  overtimePay  Float @default(0)
+  bonus        Float @default(0)
+  deduction    Float @default(0)
+  insurance    Float @default(0)
+  advance      Float @default(0) // Tạm ứng (Lấy từ Transaction hoặc nhập tay)
+
+  netPay Float // Thực lĩnh = baseSalary + allowance + overtimePay + bonus - deduction - advance
+
+  status String @default("DRAFT") // DRAFT, ACCOUNTED (Đã tính lương/hạch toán), PAID (Đã thanh toán)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  personnel Personnel @relation(fields: [personnelId], references: [id])
+  project   Project   @relation(fields: [projectId], references: [id])
+
+  @@unique([personnelId, projectId, month])
+}
+
+model LockedPeriod {
+  id       Int      @id @default(autoincrement())
+  month    String   @unique // e.g. "2026-05"
+  lockedAt DateTime @default(now())
+  lockedBy String   @default("ADMIN")
+}
+
+model Contract {
+  id             Int       @id @default(autoincrement())
+  projectId      Int       @unique
+  contractNumber String
+  customerName   String?
+  customerId     Int?
+  startDate      DateTime  @default(now())
+  endDate        DateTime?
+  value          Float     @default(0) // Giá trị hợp đồng (trước thuế)
+  vatRate        Float     @default(0)
+  status         String    @default("DRAFT") // DRAFT, SIGNED, IN_PROGRESS, COMPLETED, LIQUIDATED
+  note           String?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+
+  project          Project             @relation(fields: [projectId], references: [id])
+  customer         Customer?           @relation(fields: [customerId], references: [id])
+  milestones       ContractMilestone[]
+  guaranteeLetters GuaranteeLetter[]
+}
+
+model ContractMilestone {
+  id         Int       @id @default(autoincrement())
+  contractId Int
+  name       String // VD: Tạm ứng đợt 1, Thanh toán đợt 2
+  amount     Float
+  type       String    @default("PAYMENT") // ADVANCE, PAYMENT, RETENTION
+  dueDate    DateTime?
+  status     String    @default("PENDING") // PENDING, INVOICED, PAID
+  createdAt  DateTime  @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id])
+}
+
+model AuditLog {
+  id        Int      @id @default(autoincrement())
+  userId    Int?
+  username  String?  @default("SYSTEM")
+  action    String // CREATE, UPDATE, DELETE, LOGIN
+  entity    String // e.g. "Transaction", "Contract"
+  entityId  Int?
+  details   String? // JSON string
+  createdAt DateTime @default(now())
+}
+
+model MaterialRequisition {
+  id           Int      @id @default(autoincrement())
+  projectId    Int
+  requesterId  Int? // Personnel ID
+  date         DateTime @default(now())
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED, COMPLETED
+  note         String?
+  isOverBudget Boolean  @default(false)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  project   Project                   @relation(fields: [projectId], references: [id])
+  requester Personnel?                @relation(fields: [requesterId], references: [id])
+  items     MaterialRequisitionItem[]
+}
+
+model MaterialRequisitionItem {
+  id               Int    @id @default(autoincrement())
+  requisitionId    Int
+  materialId       Int
+  quantity         Float
+  approvedQuantity Float?
+
+  requisition MaterialRequisition @relation(fields: [requisitionId], references: [id], onDelete: Cascade)
+  material    Material            @relation(fields: [materialId], references: [id])
+}
+
+model ProgressReport {
+  id         Int      @id @default(autoincrement())
+  projectId  Int
+  reporterId Int?
+  date       DateTime @default(now())
+  weather    String?
+  content    String
+  imageUrls  String? // JSON array of base64 strings
+  createdAt  DateTime @default(now())
+
+  project  Project    @relation(fields: [projectId], references: [id])
+  reporter Personnel? @relation(fields: [reporterId], references: [id])
+}
+
+model InternalMessage {
+  id            Int     @id @default(autoincrement())
+  senderId      Int
+  receiverId    Int? // Nếu null, sẽ gửi theo role
+  receiverRole  String? // KHO, KETOAN, GIAMDOC...
+  title         String
+  content       String
+  attachmentUrl String?
+  type          String  @default("MESSAGE") // MESSAGE, TASK, SYSTEM_ALERT
+  isRead        Boolean @default(false)
+  readBy        String  @default(",") // Danh sách ID người dùng đã đọc, VD: ",1,2,5,"
+  deletedBy     String  @default(",") // Danh sách ID người dùng đã xóa
+
+  createdAt DateTime @default(now())
+
+  sender   User  @relation("SentMessages", fields: [senderId], references: [id])
+  receiver User? @relation("ReceivedMessages", fields: [receiverId], references: [id])
+}
+
+model Subcontractor {
+  id        Int      @id @default(autoincrement())
+  name      String
+  taxCode   String?
+  phone     String?
+  address   String?
+  status    String   @default("ACTIVE") // ACTIVE, INACTIVE
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  contracts    Subcontract[]
+  transactions Transaction[]
+}
+
+model Subcontract {
+  id              Int       @id @default(autoincrement())
+  subcontractorId Int
+  projectId       Int
+  code            String    @unique
+  name            String // VD: Thi công ép cọc
+  totalValue      Float     @default(0)
+  startDate       DateTime
+  endDate         DateTime?
+  status          String    @default("ACTIVE") // ACTIVE, COMPLETED, CANCELLED
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
+
+  subcontractor Subcontractor           @relation(fields: [subcontractorId], references: [id])
+  project       Project                 @relation(fields: [projectId], references: [id])
+  acceptances   SubcontractAcceptance[]
+}
+
+model SubcontractAcceptance {
+  id            Int      @id @default(autoincrement())
+  subcontractId Int
+  date          DateTime
+  acceptedValue Float
+  note          String?
+  createdAt     DateTime @default(now())
+
+  subcontract Subcontract @relation(fields: [subcontractId], references: [id])
+}
+
+model PurchaseRequest {
+  id        Int      @id @default(autoincrement())
+  projectId Int
+  date      DateTime @default(now())
+  status    String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  notes     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  project Project               @relation(fields: [projectId], references: [id])
+  items   PurchaseRequestItem[]
+}
+
+model PurchaseRequestItem {
+  id                Int   @id @default(autoincrement())
+  purchaseRequestId Int
+  materialId        Int
+  quantity          Float
+
+  purchaseRequest PurchaseRequest @relation(fields: [purchaseRequestId], references: [id], onDelete: Cascade)
+  material        Material        @relation(fields: [materialId], references: [id])
+}
+
+model PurchaseOrder {
+  id             Int      @id @default(autoincrement())
+  code           String   @unique
+  vendorId       Int
+  projectId      Int
+  date           DateTime @default(now())
+  status         String   @default("PENDING") // PENDING, ACCOUNTANT_APPROVED, DIRECTOR_APPROVED, RECEIVED
+  totalAmount    Float
+  vatAmount      Float    @default(0)
+  isDirectToSite Boolean  @default(false)
+  notes          String?
+  invoiceNumber  String?  // Số hóa đơn GTGT
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  vendor  Vendor              @relation(fields: [vendorId], references: [id])
+  project Project             @relation(fields: [projectId], references: [id])
+  items   PurchaseOrderItem[]
+}
+
+model PurchaseOrderItem {
+  id              Int   @id @default(autoincrement())
+  purchaseOrderId Int
+  materialId      Int
+  quantity        Float
+  unitPrice       Float
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  material      Material      @relation(fields: [materialId], references: [id])
+}
+
+model Equipment {
+  id        Int      @id @default(autoincrement())
+  code      String   @unique
+  name      String
+  type      String // EXCAVATOR, CRANE, TRUCK, OTHER
+  ownership String   @default("OWNED") // OWNED, RENTED
+  status    String   @default("AVAILABLE") // AVAILABLE, IN_USE, MAINTENANCE, BROKEN
+  dailyCost Float    @default(0) // Giá ca máy mặc định
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  dispatches EquipmentDispatch[]
+  usages     EquipmentUsage[]
+}
+
+model EquipmentDispatch {
+  id          Int       @id @default(autoincrement())
+  equipmentId Int
+  projectId   Int
+  startDate   DateTime
+  endDate     DateTime?
+  notes       String?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+  project   Project   @relation(fields: [projectId], references: [id])
+}
+
+model EquipmentUsage {
+  id           Int      @id @default(autoincrement())
+  equipmentId  Int
+  projectId    Int
+  date         DateTime @default(now())
+  shifts       Float    @default(1) // Số ca (1, 0.5...)
+  costPerShift Float
+  totalCost    Float
+  status       String   @default("PENDING") // PENDING, APPROVED, REJECTED
+  approvedBy   String?
+  notes        String?
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  equipment Equipment @relation(fields: [equipmentId], references: [id])
+  project   Project   @relation(fields: [projectId], references: [id])
+
+  journalEntries JournalEntry[]
+}
+
+model GuaranteeLetter {
+  id         Int      @id @default(autoincrement())
+  contractId Int
+  type       String // ADVANCE, WARRANTY, PERFORMANCE
+  value      Float
+  issueDate  DateTime
+  expiryDate DateTime
+  bankName   String
+  status     String   @default("ACTIVE") // ACTIVE, EXPIRED, RELEASED
+  notes      String?
+  createdAt  DateTime @default(now())
+
+  contract Contract @relation(fields: [contractId], references: [id], onDelete: Cascade)
+}
+
+model SystemLicense {
+  id          Int      @id @default(autoincrement())
+  licenseKey  String   @unique
+  status      String   @default("ACTIVE") // ACTIVE, EXPIRED, INVALID
+  activatedAt DateTime @default(now())
+}

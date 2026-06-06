@@ -1,0 +1,1 @@
+INSERT INTO SystemLicense (licenseKey, status, activatedAt) VALUES ('eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJjbGllbnROYW1lIjoiQ8O0bmcgdHkgVGVzdCIsImRvbWFpbiI6ImxvY2FsaG9zdCIsInR5cGUiOiJUUklBTCIsImV4cGlyeURhdGUiOiIyMDI2LTA3LTA1VDE0OjM1OjMxLjA4NFoiLCJpYXQiOjE3ODA2NzAxMzF9.fcO8XaXY8ZrZnssCfrHJfKtEpf4927mkh7UaZZFjmco', 'ACTIVE', datetime('now'));

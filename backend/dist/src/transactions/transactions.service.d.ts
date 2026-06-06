@@ -1,0 +1,144 @@
+import { PrismaService } from '../prisma/prisma.service';
+import { CreateTransactionDto } from './dto/create-transaction.dto';
+import { UpdateTransactionDto } from './dto/update-transaction.dto';
+export declare class TransactionsService {
+    private readonly prisma;
+    constructor(prisma: PrismaService);
+    create(createTransactionDto: CreateTransactionDto): Promise<{
+        id: number;
+        date: Date;
+        description: string | null;
+        createdAt: Date;
+        projectId: number | null;
+        type: string;
+        amount: number;
+        bankFee: number;
+        category: string;
+        vatRate: number;
+        vatAmount: number;
+        accountId: number;
+        personnelId: number | null;
+        internalTransferId: number | null;
+        subcontractorId: number | null;
+        isDirectMaterial: boolean;
+        invoiceNumber: string | null;
+    }>;
+    findAll(): import("@prisma/client").Prisma.PrismaPromise<({
+        project: {
+            id: number;
+            description: string | null;
+            createdAt: Date;
+            name: string;
+            status: string;
+            updatedAt: Date;
+            location: string;
+            startDate: Date;
+            endDate: Date | null;
+        } | null;
+        account: {
+            id: number;
+            createdAt: Date;
+            name: string;
+            type: string;
+            accountNumber: string | null;
+            bankName: string | null;
+            openingBalance: number;
+        };
+    } & {
+        id: number;
+        date: Date;
+        description: string | null;
+        createdAt: Date;
+        projectId: number | null;
+        type: string;
+        amount: number;
+        bankFee: number;
+        category: string;
+        vatRate: number;
+        vatAmount: number;
+        accountId: number;
+        personnelId: number | null;
+        internalTransferId: number | null;
+        subcontractorId: number | null;
+        isDirectMaterial: boolean;
+        invoiceNumber: string | null;
+    })[]>;
+    findOne(id: number): import("@prisma/client").Prisma.Prisma__TransactionClient<({
+        project: {
+            id: number;
+            description: string | null;
+            createdAt: Date;
+            name: string;
+            status: string;
+            updatedAt: Date;
+            location: string;
+            startDate: Date;
+            endDate: Date | null;
+        } | null;
+        account: {
+            id: number;
+            createdAt: Date;
+            name: string;
+            type: string;
+            accountNumber: string | null;
+            bankName: string | null;
+            openingBalance: number;
+        };
+    } & {
+        id: number;
+        date: Date;
+        description: string | null;
+        createdAt: Date;
+        projectId: number | null;
+        type: string;
+        amount: number;
+        bankFee: number;
+        category: string;
+        vatRate: number;
+        vatAmount: number;
+        accountId: number;
+        personnelId: number | null;
+        internalTransferId: number | null;
+        subcontractorId: number | null;
+        isDirectMaterial: boolean;
+        invoiceNumber: string | null;
+    }) | null, null, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
+    update(id: number, updateTransactionDto: UpdateTransactionDto): import("@prisma/client").Prisma.Prisma__TransactionClient<{
+        id: number;
+        date: Date;
+        description: string | null;
+        createdAt: Date;
+        projectId: number | null;
+        type: string;
+        amount: number;
+        bankFee: number;
+        category: string;
+        vatRate: number;
+        vatAmount: number;
+        accountId: number;
+        personnelId: number | null;
+        internalTransferId: number | null;
+        subcontractorId: number | null;
+        isDirectMaterial: boolean;
+        invoiceNumber: string | null;
+    }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
+    remove(id: number): import("@prisma/client").Prisma.Prisma__TransactionClient<{
+        id: number;
+        date: Date;
+        description: string | null;
+        createdAt: Date;
+        projectId: number | null;
+        type: string;
+        amount: number;
+        bankFee: number;
+        category: string;
+        vatRate: number;
+        vatAmount: number;
+        accountId: number;
+        personnelId: number | null;
+        internalTransferId: number | null;
+        subcontractorId: number | null;
+        isDirectMaterial: boolean;
+        invoiceNumber: string | null;
+    }, never, import("@prisma/client/runtime/client").DefaultArgs, import("@prisma/client").Prisma.PrismaClientOptions>;
+}

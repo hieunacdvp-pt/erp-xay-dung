@@ -1,0 +1,8 @@
+category,internalCode,description,unit,quantity,unitPrice,note
+NVL,VT001,Thép xây dựng D10,Kg,5000,16000,Thép Hòa Phát
+NVL,VT002,Xi măng PC40,Bao,1000,75000,Xi măng Bỉm Sơn
+NVL,VT003,Cát vàng,Khối,200,300000,Mua tại bãi gần công trường
+NHAN_CONG,NC001,Công thợ chính,Ngày,500,500000,Đội cai thầu A
+NHAN_CONG,NC002,Công thợ phụ,Ngày,1000,350000,Đội cai thầu A
+MAY_THI_CONG,MTC01,Ca máy xúc,Ca,20,2000000,Bao gồm cả dầu
+CHUNG,CP001,Lán trại tạm,Gói,1,15000000,Khoán gọn
